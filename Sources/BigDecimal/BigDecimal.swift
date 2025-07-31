@@ -1477,3 +1477,42 @@ extension BigDecimal {
         }
     }
 }
+
+/// MARK: Normalization inits
+extension BigDecimal {
+  /// Initializes a normalized copy of a `BigDecimal`, stripping
+  /// trailing zeros when the exponent is negative.
+  ///
+  /// If the number is non-zero and has a negative exponent,
+  /// this initializer removes trailing zeros from the significand
+  /// while preserving the numeric value. Useful for canonicalization
+  /// and formatting.
+  ///
+  /// If no normalization is needed, the subject is returned unchanged.
+  ///
+  /// - Parameter subject: The `BigDecimal` to normalize.
+  public init(normalize subject: BigDecimal) {
+    guard subject.significand != 0 && subject.exponent < 0 else {
+      self = subject
+      return
+    }
+
+    var sig = subject.significand
+    var exp = subject.exponent
+
+    var trailing = 0
+    while sig % 10 == 0 {
+      sig /= 10
+      trailing += 1
+    }
+
+    let maxStrip = min(trailing, -exp)
+
+    if maxStrip > 0 {
+      sig *= BigDecimal(10).pow(trailing - maxStrip)
+      exp += maxStrip
+    }
+
+    self.init(sign: subject.sign, exponent: exp, significand: sig)
+  }
+}
